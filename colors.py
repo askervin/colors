@@ -155,13 +155,27 @@ def palette_of_n_grayscales(n=12):
     n_f = float(n-1)
     return [(f/n_f, f/n_f, f/n_f) for f in xrange(n)]
 
+def rgb2yuv(r, g, b):
+    y = 0.299 * r + 0.587 * g + 0.114 * b
+    u = -0.14713 * r - 0.28886 * g + 0.436 * b
+    v = 0.615 * r - 0.51499 * g - 0.10001 * b
+    return y, u, v
+
+def yuv2rgb(y, u, v):
+    r = max(0.0, min(1.0, y + 1.13983 * v))
+    g = max(0.0, min(1.0, y - 0.39465 * u - 0.58060 * v))
+    b = max(0.0, min(1.0, y + 2.03211 * u))
+    return r, g, b
+
 def palette_dark_shades(input_palette, shades=1):
     """returns palette that contains darker shades of colors in input palette"""
     factors = [float(i)/(shades+1.0) for i in xrange(1, shades+1)]
     output_palette = []
     for f in factors:
         for r, g, b in input_palette:
-            output_palette.append((f * r, f * g, f * b))
+            y, u, v = rgb2yuv(r, g, b)
+            y = y * f
+            output_palette.append(yuv2rgb(y, u, v))
     return output_palette
 
 def palette_light_shades(input_palette, shades=1):
@@ -170,9 +184,9 @@ def palette_light_shades(input_palette, shades=1):
     output_palette = []
     for f in factors:
         for r, g, b in input_palette:
-            output_palette.append((r + f * (1.0 - r),
-                                   g + f * (1.0 - g),
-                                   b + f * (1.0 - b)))
+            y, u, v = rgb2yuv(r, g, b)
+            y = y + f * (1.0 - y)
+            output_palette.append(yuv2rgb(y, u, v))
     return output_palette
 
 def paint_palette(pixels, start_y, height, width, palette):
